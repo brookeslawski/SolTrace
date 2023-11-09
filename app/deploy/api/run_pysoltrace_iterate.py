@@ -5,8 +5,8 @@ Created on Tue Jul 25 09:24:15 2023
 
 @author: bstanisl
 """
-import os
-os.chdir('/Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/')
+# import os
+# os.chdir('/Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/')
 # from os.path import exists
 import glob
 from pysoltrace import PySolTrace, Point
@@ -421,7 +421,7 @@ def run_soltrace_iterate(times, latitude, longitude, altitude, field_data_path, 
         if tracker_angle_input_mode == 'field':
             print('reading nominal results dataframe for comparison')
             # nominaldf = pickle.load(open('/Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/nominal_12_16_22_1e5.p','rb'))
-            nomfn = '/Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/nominal_{}_{}_*hits_{}_optics.p'.format(sensorinputdata.index[0].month,sensorinputdata.index[0].day,optics_type)
+            nomfn = '/Users/bstanisl/Library/CloudStorage/OneDrive-NREL/Documents/seto-csp-project/SolTrace/s_SolTrace_gitclone_10_31_23/SolTrace/app/deploy/api/nominal_{}_{}_*hits_{}_optics.p'.format(sensorinputdata.index[0].month,sensorinputdata.index[0].day,optics_type)
             if len(glob.glob(nomfn)) > 0:
             # if exists(nomfn):
                 tmp = pickle.load(open(glob.glob(nomfn)[-1],'rb'))
@@ -468,12 +468,12 @@ def run_soltrace_iterate(times, latitude, longitude, altitude, field_data_path, 
 #%% INPUTS ===========================================================================================
 
 # define constant inputs                                                                                                                                                                                                                                                                                                                       
-sunshape_flag = True
-sfcerr_flag = True
+sunshape_flag = False
+sfcerr_flag = False
 optics_type = 'realistic' # 'yang' 'realistic' # 'ideal'
 plot_rays = False
-save_pickle = True
-number_hits = 1e5 # 5e6 # 1e5 #1e5 
+save_pickle = False
+number_hits = 1e3 # 5e6 # 1e5 #1e5 
 
 # parabolic trough geometry definition ================================
 # NSO Trough Geometry: using measurements from CAD file from Dave (aka LS-2)
@@ -490,30 +490,31 @@ critical_angle_error_max = np.degrees(2.363636e-02) #[deg] from firstoptic valid
 # field site definition ================================
 lat, lon = 35.8, -114.983 #coordinates of Nevada Solar One
 altitude = 543 #m
-save_path = '/Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/'
+save_path = '/Users/bstanisl/Library/CloudStorage/OneDrive-NREL/Documents/seto-csp-project/SolTrace/s_SolTrace_gitclone_10_31_23/SolTrace/app/deploy/api/'
+
 
 # running with field data timeseries =============================================
 #path = 'smb://nrel.gov/shared/Wind-data/Restricted/Projects/NSO/Processed_data/'
-# tracker_angle_input = 'field' # 'validation' 'nominal' # 'field'
-# # sensorlocs = ['R1_Mid', 'R1_SO', 'R2_SO'] #,'R1_Mid','R1_SO'] #,'R1_SO'] 
-# sensorlocs = ['R1_DO'] #,'R1_Mid','R1_SO','R2_DO','R2_Mid','R2_SO','R4_DO','R4_Mid','R4_SO']
-# # sensorlocs = ['R1_SO','R1_Mid','R1_DO','R2_SO','R2_Mid','R2_DO','R4_SO','R4_Mid','R4_DO']
-# # times = pd.date_range('2023-03-05 15:00:00', '2023-03-05 23:50:00',freq='1H') # in UTC
-# tstart = '2023-01-15 16:00:00' # fulldata.index[0] # '2023-02-11 17:00:00'
-# tend = '2023-01-15 21:00:00' 
-# times = pd.date_range(tstart, tend, freq='0.5H') # in UTC
-# # field_data_path = '/Users/bstanisl/Documents/seto-csp-project/NSO-field-data/' CHANGE THIS TO SERVER
-# field_data_path = '/Volumes/Processed_data/'
-# error_angles = []
+tracker_angle_input = 'field' # 'validation' 'nominal' # 'field'
+# sensorlocs = ['R1_Mid', 'R1_SO', 'R2_SO'] #,'R1_Mid','R1_SO'] #,'R1_SO'] 
+sensorlocs = ['R1_DO'] #,'R1_Mid','R1_SO','R2_DO','R2_Mid','R2_SO','R4_DO','R4_Mid','R4_SO']
+# sensorlocs = ['R1_SO','R1_Mid','R1_DO','R2_SO','R2_Mid','R2_DO','R4_SO','R4_Mid','R4_DO']
+# times = pd.date_range('2023-03-05 15:00:00', '2023-03-05 23:50:00',freq='1H') # in UTC
+tstart = '2023-01-15 16:00:00' # fulldata.index[0] # '2023-02-11 17:00:00'
+tend = '2023-01-15 21:00:00' 
+times = pd.date_range(tstart, tend, freq='4H') # in UTC
+# field_data_path = '/Users/bstanisl/Documents/seto-csp-project/NSO-field-data/' CHANGE THIS TO SERVER
+field_data_path = '/Volumes/Processed_data/'
+error_angles = []
 
 # running for validation ===================================
-times = [''] # in UTC
-field_data_path = '' 
-tracker_angle_input = 'validation'
-sensorlocs = ['validation']
-error_angles = np.concatenate((np.linspace(0.,critical_angle_error_min, 2),  #3
-                    np.linspace(critical_angle_error_min+.06, critical_angle_error_max-.05, 3), #7
-                    np.linspace(critical_angle_error_max, 3., 2))) #3
+# times = [''] # in UTC
+# field_data_path = '' 
+# tracker_angle_input = 'validation'
+# sensorlocs = ['validation']
+# error_angles = np.concatenate((np.linspace(0.,critical_angle_error_min, 2),  #3
+#                     np.linspace(critical_angle_error_min+.06, critical_angle_error_max-.05, 3), #7
+#                     np.linspace(critical_angle_error_max, 3., 2))) #3
 # error_angles = np.linspace(0,2.5,3) # 0.05 #0.025 # [deg]
 
 # running  nominal (no tracking error) ===================================
