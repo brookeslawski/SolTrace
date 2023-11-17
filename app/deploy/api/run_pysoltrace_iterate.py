@@ -147,7 +147,7 @@ def run_soltrace_iterate(times, latitude, longitude, altitude, field_data_path, 
         error = error_angles
         
     elif tracker_angle_input_mode == 'stats':
-        stats_data = pickle.load(open('/Users/bstanisl/Documents/seto-csp-project/NSO-field-data/tracker_error_stats_calibrated.p','rb'))
+        stats_data = pickle.load(open('/Users/bstanisl/OneDrive - NREL/Documents/seto-csp-project/NSO-field-data/tracker_error_stats_calibrated.p','rb'))
             
     #=======================================================================
     #% calculate sun positions  --------------------------------------
@@ -472,8 +472,8 @@ sunshape_flag = False
 sfcerr_flag = False
 optics_type = 'realistic' # 'yang' 'realistic' # 'ideal'
 plot_rays = False
-save_pickle = False
-number_hits = 1e3 # 5e6 # 1e5 #1e5 
+save_pickle = True
+number_hits = 1e5 # 5e6 # 1e5 #1e5 
 
 # parabolic trough geometry definition ================================
 # NSO Trough Geometry: using measurements from CAD file from Dave (aka LS-2)
@@ -495,17 +495,17 @@ save_path = '/Users/bstanisl/Library/CloudStorage/OneDrive-NREL/Documents/seto-c
 
 # running with field data timeseries =============================================
 #path = 'smb://nrel.gov/shared/Wind-data/Restricted/Projects/NSO/Processed_data/'
-tracker_angle_input = 'field' # 'validation' 'nominal' # 'field'
-# sensorlocs = ['R1_Mid', 'R1_SO', 'R2_SO'] #,'R1_Mid','R1_SO'] #,'R1_SO'] 
-sensorlocs = ['R1_DO'] #,'R1_Mid','R1_SO','R2_DO','R2_Mid','R2_SO','R4_DO','R4_Mid','R4_SO']
-# sensorlocs = ['R1_SO','R1_Mid','R1_DO','R2_SO','R2_Mid','R2_DO','R4_SO','R4_Mid','R4_DO']
-# times = pd.date_range('2023-03-05 15:00:00', '2023-03-05 23:50:00',freq='1H') # in UTC
-tstart = '2023-01-15 16:00:00' # fulldata.index[0] # '2023-02-11 17:00:00'
-tend = '2023-01-15 21:00:00' 
-times = pd.date_range(tstart, tend, freq='4H') # in UTC
-# field_data_path = '/Users/bstanisl/Documents/seto-csp-project/NSO-field-data/' CHANGE THIS TO SERVER
-field_data_path = '/Volumes/Processed_data/'
-error_angles = []
+# tracker_angle_input = 'field' # 'validation' 'nominal' # 'field'
+# # sensorlocs = ['R1_Mid', 'R1_SO', 'R2_SO'] #,'R1_Mid','R1_SO'] #,'R1_SO'] 
+# sensorlocs = ['R1_DO','R1_Mid','R1_SO','R2_DO','R2_Mid','R2_SO','R4_DO','R4_Mid','R4_SO']
+# # sensorlocs = ['R1_SO','R1_Mid','R1_DO','R2_SO','R2_Mid','R2_DO','R4_SO','R4_Mid','R4_DO']
+# # times = pd.date_range('2023-03-05 15:00:00', '2023-03-05 23:50:00',freq='1H') # in UTC
+# tstart = '2023-01-15 16:00:00' # fulldata.index[0] # '2023-02-11 17:00:00'
+# tend = '2023-01-15 21:00:00' 
+# times = pd.date_range(tstart, tend, freq='0.5H') # in UTC
+# # field_data_path = '/Users/bstanisl/Documents/seto-csp-project/NSO-field-data/' CHANGE THIS TO SERVER
+# field_data_path = '/Volumes/Processed_data/'
+# error_angles = []
 
 # running for validation ===================================
 # times = [''] # in UTC
@@ -534,12 +534,12 @@ error_angles = []
 # error_angles = []
 
 # running characteristic median diurnal cycle from NSO ======================================
-# times = None
-# field_data_path = None
-# tracker_angle_input = 'stats' # 'validation' 'nominal' # 'field'
-# rows = [1, 2, 4]
-# sensorlocs = ['DO','Mid','SO']
-# error_angles = []
+times = None
+field_data_path = None
+tracker_angle_input = 'stats' # 'validation' 'nominal' # 'field'
+rows = [1, 2, 4]
+sensorlocs = ['DO','Mid','SO']
+error_angles = []
 
 # data output settings
 # mesh discretization on absorber tube for flux map

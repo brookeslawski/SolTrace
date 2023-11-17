@@ -7,15 +7,15 @@ Created on Fri Mar 31 16:51:58 2023
 
 @author: bstanisl
 """
-import os
-os.chdir('/Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/')
+# import os
+# os.chdir('/Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/')
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import pickle
-from postprocessing_functions import *
+from st_processing_functions import *
 
-figdir = '/Users/bstanisl/Documents/seto-csp-project/SolTrace/fig/'
+figdir = '/Users/bstanisl/Library/CloudStorage/OneDrive-NREL/Documents/seto-csp-project/SolTrace/fig/'
 
 tau = 1. # transmittance of glass envelope
 
@@ -24,7 +24,7 @@ a_w = 5.0 #5.77 # aperture width
 aperture_area = a_w * l_c
 Ib = 1000 # W/m2
 
-sensorlocs = ['R1_SO','R1_Mid','R1_DO']
+# sensorlocs = ['R1_SO','R1_Mid','R1_DO']
 
 optics_type = 'realistic' # 'ideal'
 
@@ -42,40 +42,14 @@ else:
 # read in results
 tracker_angle_input = 'field' # 'field'
 n_hits = 1e5 #1e5
-fulldata,results = pickle.load(open('/Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/{}_{}.p'.format(tracker_angle_input,n_hits), 'rb'))
+results = pickle.load(open('field_1_15_1E+05hits_realistic_optics.p','rb'))
 
-#%%
-plot_time_series_compare_sensors(nominaldf, fulldata, results, x, sensorlocs)
+# read in nominal results
+nomfn = 'nominal_1_15_1E+05hits_realistic_optics.p'
+tmp = pickle.load(open(glob.glob(nomfn)[-1],'rb'))
+nominaldf = tmp['nominal']
 
-#%% calculate opt efficiency and heat flux
-for sensorloc in sensorlocs:
-    results[sensorloc]['eta'] = absr_alpha * tau * refl_rho * results[sensorloc].intercept_factor.values
-    # results[sensorloc]['eta'] = results[sensorloc].intercept_factor.values
-    results[sensorloc]['Q'] = results[sensorloc]['eta'].values * aperture_area * Ib
-
-#%% plot outputs
-fig, axs = plt.subplots(4,1,figsize=[9,7],dpi=250,sharex=True)
-
-axs[0].plot(fulldata.apparent_elevation,'k.-')
-axs[0].set_ylabel('sun elev. angle [deg]')
-
-for sensorloc in sensorlocs:
-    axs[1].plot(results[sensorloc].intercept_factor, '.-',label=sensorloc)
-    axs[2].plot(results[sensorloc].eta, '.-',label=sensorloc)
-    axs[3].plot(results[sensorloc].Q, '.-',label=sensorloc)
-
-axs[1].set_ylabel('intercept factor')
-axs[1].set_ylim([0, 1])
-axs[2].set_ylabel('optical efficiency')
-axs[2].set_ylim([0, 1])
-axs[3].set_ylabel('Q [W]')
-
-plt.legend()
- 
-for ax in axs:
-    ax.tick_params(axis='x',labelrotation=30)
-
-plt.tight_layout()
+plot_time_series_optical_results(results, nominaldf)
 
 #%% validate against literature
 valdata = {}
@@ -100,8 +74,65 @@ valdata = {}
 
 filedir = '/Users/bstanisl/OneDrive - NREL/Documents/seto-csp-project/SolTrace/firstOptic_Tracking.dat'
 valdata['firstoptic'] = pd.read_csv(filedir, header=None, sep=' ', names=['tracker_error', 'intercept_factor'])
-valdata['firstoptic']['tracker_error'] = np.degrees(valdata['firstoptic']['tracker_error'])
+valdata['firstoptic']['tracker_error'] = valdata['firstoptic']['tracker_error']*1000.
+# valdata['firstoptic']['tracker_error'] = np.degrees(valdata['firstoptic']['tracker_error'])
 
+#%% plot validation of intercept factor - firstOPTIC
+plt.rcParams['font.family'] = 'serif'
+plt.rcParams['mathtext.fontset'] = 'dejavuserif'
+plt.rcParams['font.size'] = 14
+
+tracker_angle_input = 'validation'
+
+resolution_value = 300
+# results,_ = pickle.load(open('/Users/bstanisl/OneDrive - NREL/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/validation_1E+05hits_realistic_optics-nosunshape-noslopeerr.p', 'rb'))
+df, results = pd.read_pickle('/Users/bstanisl/Library/CloudStorage/OneDrive-NREL/Documents/seto-csp-project/SolTrace/s_SolTrace_gitclone_10_31_23/SolTrace/app/deploy/api/validation_1E+05hits_ideal_optics.p')
+fulldata = results['validation']
+
+critical_angle_error_min = 1.365657e-02*1000. # [mrad] #0.79 #[deg] from firstoptic validation dataset
+critical_angle_error_max = 2.363636e-02*1000. #[deg] from firstoptic validation dataset
+
+fig = plt.figure(dpi=resolution_value)
+# plt.scatter(valdata['yang-intc']['tracker_error'],valdata['yang-intc']['intercept_factor'],color='k',marker='x', label='Yang et al. 2022')
+plt.plot(valdata['firstoptic']['tracker_error'],valdata['firstoptic']['intercept_factor'],color='k', label='FirstOPTIC')
+if tracker_angle_input == 'validation':
+    sensorloc='validation'
+    fulldata['trough_angle_dev'] = np.deg2rad(fulldata['trough_angle_dev']).values * 1000.
+    plt.plot(fulldata['trough_angle_dev'],results[sensorloc].intercept_factor, 'kx', label = 'pysoltrace')
+else:
+    for sensorloc in sensorlocs:
+        devkey = [col for col in fulldata.filter(regex='trough_angle_dev').columns if sensorloc in col]
+        plt.scatter(fulldata[devkey],results[sensorloc].intercept_factor, color='r', label = sensorloc)
+        # plt.scatter(fulldata[devkey],results[sensorloc].intercept_factor, label = sensorloc)
+plt.axvspan(critical_angle_error_min, critical_angle_error_max, color='#ede29a', alpha=0.6)
+# plt.xlabel('tracking error ($\epsilon$) [$^\circ$]')
+plt.xlabel('tracking error ($\epsilon$) [mrad]')
+plt.ylabel('intercept factor ($\gamma$) [-]')
+plt.legend()
+
+MSE = np.square(np.subtract(valdata['firstoptic']['intercept_factor'],results[sensorloc].intercept_factor)).mean() 
+ 
+RMSE = MSE**(1/2)
+
+plt.savefig('{}validation-firstoptic-mrad.pdf'.format(figdir), format='pdf', dpi=resolution_value)
+
+#%% stats
+# load in data
+# pickle load
+
+stats_data = pickle.load(open('/Users/bstanisl/OneDrive - NREL/Documents/seto-csp-project/NSO-field-data/tracker_error_stats_calibrated.p','rb'))
+solpos = pd.DataFrame([[0., 0., 100.]], columns=['sun_pos_x', 'sun_pos_y', 'sun_pos_z'])
+
+# select only the rows that match the senslocs requested in the inputs
+dfdata = stats_data.loc[(rows, sensorlocs),:]
+
+# plot that data
+# plot_stats_deviation(dfdata)
+
+
+# plot_stats_intercept_factor(results)
+
+plot_stats_deviation_intercept(dfdata, results)
 
 #%% plot validation of Q
 fig = plt.figure(dpi=250)
@@ -125,43 +156,7 @@ plt.xlabel('trough angle deviation [deg]')
 plt.ylabel('$\eta$ [%]')
 plt.legend()
 
-#%% plot validation of intercept factor - firstOPTIC
-plt.rcParams['font.family'] = 'serif'
-plt.rcParams['mathtext.fontset'] = 'dejavuserif'
-plt.rcParams['font.size'] = 14
 
-tracker_angle_input = 'validation'
-
-resolution_value = 300
-# results,_ = pickle.load(open('/Users/bstanisl/OneDrive - NREL/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/validation_1E+05hits_realistic_optics-nosunshape-noslopeerr.p', 'rb'))
-df,results = pd.read_pickle('/Users/bstanisl/OneDrive - NREL/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/validation_1E+05hits_ideal_optics.p')
-
-fulldata = results['validation']
-
-critical_angle_error_min = 0.79 #[deg] from firstoptic validation dataset
-critical_angle_error_max = np.degrees(2.363636e-02) #[deg] from firstoptic validation dataset
-
-fig = plt.figure(dpi=resolution_value)
-# plt.scatter(valdata['yang-intc']['tracker_error'],valdata['yang-intc']['intercept_factor'],color='k',marker='x', label='Yang et al. 2022')
-plt.plot(valdata['firstoptic']['tracker_error'],valdata['firstoptic']['intercept_factor'],color='k', label='FirstOPTIC')
-if tracker_angle_input == 'validation':
-    sensorloc='validation'
-    plt.plot(fulldata['trough_angle_dev'],results[sensorloc].intercept_factor, 'kx', label = 'pysoltrace')
-else:
-    for sensorloc in sensorlocs:
-        devkey = [col for col in fulldata.filter(regex='trough_angle_dev').columns if sensorloc in col]
-        plt.scatter(fulldata[devkey],results[sensorloc].intercept_factor, color='r', label = sensorloc)
-        # plt.scatter(fulldata[devkey],results[sensorloc].intercept_factor, label = sensorloc)
-plt.axvspan(critical_angle_error_min, critical_angle_error_max, color='0.7', alpha=0.6)
-plt.xlabel('tracking error ($\epsilon$) [$^\circ$]')
-plt.ylabel('intercept factor ($\gamma$) [-]')
-plt.legend()
-
-MSE = np.square(np.subtract(valdata['firstoptic']['intercept_factor'],results[sensorloc].intercept_factor)).mean() 
- 
-RMSE = MSE**(1/2)
-
-# plt.savefig('{}validation-firstoptic.pdf'.format(figdir), format='pdf', dpi=resolution_value)
 
 #%% plotting median diurnal cycle with intercept factor 
 combineddf = resultsdf.merge(mediandf, left_index = True, right_index = True, how='outer')
@@ -284,3 +279,37 @@ for ax,sinputloc in zip(axs.ravel(),sensorlocs):
     ax.set_title(sinputloc)
 axs[-1].legend(bbox_to_anchor=(1, 1.1), loc='upper left', fontsize=10)
 axs[0].set_ylabel('|trough angle deviation| ($\epsilon$) [deg]')
+
+#%%
+#%%
+plot_time_series_compare_sensors(nominaldf, fulldata, results, x, sensorlocs)
+
+#%% calculate opt efficiency and heat flux
+for sensorloc in sensorlocs:
+    results[sensorloc]['eta'] = absr_alpha * tau * refl_rho * results[sensorloc].intercept_factor.values
+    # results[sensorloc]['eta'] = results[sensorloc].intercept_factor.values
+    results[sensorloc]['Q'] = results[sensorloc]['eta'].values * aperture_area * Ib
+
+#%% plot outputs
+fig, axs = plt.subplots(4,1,figsize=[9,7],dpi=250,sharex=True)
+
+axs[0].plot(fulldata.apparent_elevation,'k.-')
+axs[0].set_ylabel('sun elev. angle [deg]')
+
+for sensorloc in sensorlocs:
+    axs[1].plot(results[sensorloc].intercept_factor, '.-',label=sensorloc)
+    axs[2].plot(results[sensorloc].eta, '.-',label=sensorloc)
+    axs[3].plot(results[sensorloc].Q, '.-',label=sensorloc)
+
+axs[1].set_ylabel('intercept factor')
+axs[1].set_ylim([0, 1])
+axs[2].set_ylabel('optical efficiency')
+axs[2].set_ylim([0, 1])
+axs[3].set_ylabel('Q [W]')
+
+plt.legend()
+ 
+for ax in axs:
+    ax.tick_params(axis='x',labelrotation=30)
+
+plt.tight_layout()

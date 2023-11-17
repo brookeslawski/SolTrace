@@ -10,6 +10,7 @@ elements:
 """
 import numpy as np
 import pandas as pd
+import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 plt.ion()
 import math
@@ -407,8 +408,13 @@ def plot_sun_trough_deviation_angles(fulldata, sensorloc, adj_flag = True):
     plt.tight_layout()
     plt.show()
 
-def plot_stats_deviation(track_error_stats, critical_angle_error=0.79):
+def plot_stats_deviation(track_error_stats, critical_angle_error=13.65657, units='mrad'):
     sensor_locs = track_error_stats.index.unique(level=1).values
+    
+    if units=='mrad':
+        for col in track_error_stats.columns:
+            track_error_stats[col] = np.deg2rad(track_error_stats[col]).values*1000.
+    
     fig,axs = plt.subplots(1,3,sharey=True,figsize=[9,3],dpi=250)
     for ax,sinputloc in zip(axs.ravel(),sensor_locs):
         rows = track_error_stats.index.unique(level=0).values
@@ -419,13 +425,14 @@ def plot_stats_deviation(track_error_stats, critical_angle_error=0.79):
         ax.fill_between(rows, ys-2*stds, ys+2*stds, color='C0', alpha=0.2, label='$\overline{\epsilon} + 2\sigma$')
         ax.plot(rows, track_error_stats.loc[(rows,sinputloc),'absmax'], 'k.', label='peak')
         # ax.plot(rows, track_error_stats.loc[(rows,sloc),'absmin'], 'k.', label='')
-        ax.axhline(critical_angle_error, color='0.6', label='critical $\epsilon$')
+        ax.axhline(critical_angle_error, color='0.6', linestyle='--', label='critical $\epsilon$')
         ax.axhline(0, color='0.5', linestyle=':')
         ax.set_xlabel('row')
         ax.set_title(sinputloc)
+        ax.set_xticks([1,2,3,4])
     
     axs[-1].legend(bbox_to_anchor=(1, 1.1), loc='upper left', fontsize=10)
-    axs[0].set_ylabel('|trough angle deviation| ($\epsilon$) [deg]')
+    axs[0].set_ylabel('|$\epsilon$| [mrad]')
     plt.show()
 
 def plot_stats_intercept_factor(results):
@@ -469,9 +476,62 @@ def plot_stats_intercept_factor(results):
         # ax.axhline(0, color='0.5', linestyle=':')
         ax.set_xlabel('row')
         ax.set_title(sloc)
+        ax.set_xticks([1,2,3,4])
 
     axs[-1].legend(bbox_to_anchor=(1, 1.1), loc='upper left', fontsize=10)
     axs[0].set_ylabel('intercept factor ($\gamma$)')
+    plt.show()
+
+def plot_stats_deviation_intercept(track_error_stats, results, critical_angle_error=13.65657, units='mrad'):
+    sensor_locs = track_error_stats.index.unique(level=1).values
+    
+    if units=='mrad':
+        for col in track_error_stats.columns:
+            track_error_stats[col] = np.deg2rad(track_error_stats[col]).values*1000.
+    
+    fig,axs = plt.subplots(2,3,sharey='row',sharex=True,figsize=[9,6],dpi=300)
+    for ax,sinputloc in zip(axs[0,:].ravel(),sensor_locs):
+        rows = track_error_stats.index.unique(level=0).values
+        ys = track_error_stats.loc[(rows,sinputloc),'absmean']
+        stds = track_error_stats.loc[(rows,sinputloc),'absstd']
+        ax.plot(rows, ys,'.-', label='$\overline{\epsilon}$')
+        ax.fill_between(rows, ys-stds, ys+stds, color='C0', alpha=0.4, label='$\overline{\epsilon} + \sigma$')
+        ax.fill_between(rows, ys-2*stds, ys+2*stds, color='C0', alpha=0.2, label='$\overline{\epsilon} + 2\sigma$')
+        ax.plot(rows, track_error_stats.loc[(rows,sinputloc),'absmax'], 'k.', label='peak')
+        # ax.plot(rows, track_error_stats.loc[(rows,sloc),'absmin'], 'k.', label='')
+        ax.axhline(critical_angle_error, color='0.6', linestyle='--', label='critical $\epsilon$')
+        ax.axhline(0, color='0.5', linestyle=':')
+        # ax.set_xlabel('row')
+        ax.set_title(sinputloc)
+        ax.set_xticks([1,2,3,4])
+    
+    axs[0,-1].legend(bbox_to_anchor=(1, 1.1), loc='upper left', fontsize=10)
+    axs[0,0].set_ylabel('|$\epsilon$| [mrad]')
+
+    resultsdf = results[list(results.keys())[0]]
+    rows = resultsdf.index.unique(level=0).values
+    
+    for ax,sloc in zip(axs[1,:].ravel(),sensor_locs):
+        ys = resultsdf.loc[(rows,sloc,'absmean'),'intercept_factor']
+        yp2std = resultsdf.loc[(rows,sloc,'absmean+2std'),'intercept_factor']
+        ypstd = resultsdf.loc[(rows,sloc,'absmean+std'),'intercept_factor']
+        ymstd = resultsdf.loc[(rows,sloc,'absmean-std'),'intercept_factor']
+        maxs = resultsdf.loc[(rows,sloc,'absmax'),'intercept_factor']
+        # stds = track_error_stats.loc[(rows,sloc),'absstd']
+        ax.plot(rows, ys,'.-', label='$\overline{\gamma}$')
+        ax.fill_between(rows, yp2std, ymstd, color='C0', alpha=0.2, label='$\overline{\gamma} + 2\sigma$')
+        ax.fill_between(rows, ypstd, ymstd, color='C0', alpha=0.4, label='$\overline{\gamma} + \sigma$')
+        ax.plot(rows, maxs, 'k.', label='$min(\gamma)$')
+        ax.axhline(0,color='0.8',linestyle=':')
+        # ax.plot(rows, track_error_stats.loc[(rows,sloc),'absmin'], 'k.', label='')
+        # ax.axhline(0, color='0.5', linestyle=':')
+        ax.set_xlabel('row')
+        # ax.set_title(sloc)
+        ax.set_xticks([1,2,3,4])
+
+    axs[1,-1].legend(bbox_to_anchor=(1, 1.1), loc='upper left', fontsize=10)
+    axs[1,0].set_ylabel('intercept factor ($\gamma$)')
+    plt.tight_layout()
     plt.show()
 
 def plot_diurnal_cycle_optical_performance(mediandf, resultsdf, critical_angle_error):
@@ -931,7 +991,12 @@ def plot_time_series_compare_sensors(nominaldf, inputsdf, results, x, sensorlocs
     plt.tight_layout()
     plt.show()
 
-def plot_time_series_optical_results(results, nominaldf = None, critical_angle_error_min = 0.79, critical_angle_error_max = 1.3542636710518383):
+def plot_time_series_optical_results(results, nominaldf = None, units='mrad', critical_angle_error_min = 0.79, critical_angle_error_max = 1.3542636710518383):
+    
+    if units == 'mrad':
+        critical_angle_error_min_mrad = np.deg2rad(critical_angle_error_min)*1000.
+        critical_angle_error_max_mrad = np.deg2rad(critical_angle_error_max)*1000.
+    
     # extract row numbers
     rows = []
     for key in list(results.keys()):
@@ -960,19 +1025,34 @@ def plot_time_series_optical_results(results, nominaldf = None, critical_angle_e
             tracking_error = tracking_error.where(tracking_error < critical_angle_error_max)
             # results[column] = results[column].where(tracking_error < critical_angle_error_max)
             
-            axs[n*3].axhline(critical_angle_error_min, color='0.6')
+            if units=='mrad':
+                tracking_error = np.deg2rad(tracking_error)*1000.
+                axs[n*3].axhline(critical_angle_error_min_mrad, linestyle='--', color='0.6')
+                axs[n*3].set_ylim([-0.872665,critical_angle_error_max_mrad])
+                axs[n*3].set_ylabel('$|\epsilon|$ [mrad]')
+                axs[n*3].set_title('Row {}'.format(row[-1]))
+            else:
+                axs[n*3].axhline(critical_angle_error_min, color='0.6')
+                axs[n*3].set_ylim([-0.872665,critical_angle_error_max])
+                axs[n*3].set_ylabel(r'$ |\epsilon| \; [^\circ]$')
+            
             axs[n*3].plot(tracking_error, '.-', label=column)
-            axs[n*3].set_ylim([-0.05,critical_angle_error_max])
+
             axs[n*3+1].plot(results[column].intercept_factor, '.-', label=column)
             axs[n*3+1].set_ylim([0,1])
             axs[n*3+2].plot(results[column].coeff_var, '.-', label=column)
             axs[n*3+2].set_ylim([1,2])
             # axs[0].plot(data[column],'.', markersize=markersize, label='') #, label=column[:6])
-        axs[n*3].set_ylabel(r'$ |\epsilon| \; [^\circ]$')
+        
         axs[n*3].legend(bbox_to_anchor=(1, 1.1), loc='upper left', fontsize=9)
     
         axs[n*3+1].set_ylabel(r'$ \lambda \; [-]$')   
         axs[n*3+2].set_ylabel(r'$ C_v \; [-]$')   
+        
+        myFmt = mdates.DateFormatter('%D %H:%M')
+        axs[-1].xaxis.set_major_formatter(myFmt)
+        axs[-1].set_xlabel('Date Time [UTC]')
+        fig.autofmt_xdate() 
 
     plt.tight_layout()
     plt.show()
